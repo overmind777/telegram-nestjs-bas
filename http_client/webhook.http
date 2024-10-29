@@ -1,0 +1,16 @@
+GET http://localhost:3000/
+
+###
+
+GET https://4da3-2a02-2378-131f-6504-b891-f56b-e60f-9e.ngrok-free.app/telegram/webhook
+
+###
+
+POST https://4da3-2a02-2378-131f-6504-b891-f56b-e60f-9e.ngrok-free.app/telegram/webhook
+Content-Type: application/json
+
+{
+  "name": "Alex"
+}
+
+###
