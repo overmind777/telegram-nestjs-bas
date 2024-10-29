@@ -1,32 +1,59 @@
-import { Update, Start, Ctx, Command, On, Help, Hears } from 'nestjs-telegraf';
+import { Ctx, Help, On, Start, Update } from 'nestjs-telegraf';
 import { Context } from 'telegraf';
+
+const waterChoices: string[] = ['18.9 l', '6 l', '1.5 l', '0.5 l'];
+const juiceChoices: string[] = ['10 l', '5 l', '3 l', '1 l'];
+const coffeeChoices: string[] = ['1 kg', '0.250 kg'];
+let choice: string[];
 
 @Update()
 export class AppUpdate {
+  @Start()
+  async start(@Ctx() ctx: Context) {
+    await ctx.replyWithMarkdownV2('Welcome to my bot', {
+      reply_markup: {
+        keyboard: [['Water', 'Juice', 'Coffee'], ['<- Back']],
+        resize_keyboard: true,
+        one_time_keyboard: true,
+      },
+    });
+  }
 
-    @Start()
-    async start(@Ctx() ctx: Context) {
-        console.log('Start')
-        await ctx.reply('Вітаємо у нашому Telegram-боті!');
-    }
+  @Help()
+  async help(@Ctx() ctx: Context) {
+    console.log('Help');
+    await ctx.reply('Help with commands');
+    // Тут можеш додати логіку для збору даних
+  }
 
-    @Help()
-    async help(@Ctx() ctx: Context) {
-        console.log('Help')
-        await ctx.reply('Вкажіть, будь ласка, кількість води та адресу доставки.');
-        // Тут можеш додати логіку для збору даних
+  @On('text')
+  async onText(@Ctx() ctx: Context) {
+    // console.log('@OnText: ---', ctx.text);
+    const message: string = ctx.text;
+    const goods: string[] = ['water', 'juice', 'coffee', '<- back'];
+    if (!goods.includes(message.toLowerCase())) {
+      await ctx.reply('You can buy only Water, Juice or Coffee');
+      return false;
     }
-
-    @On('text')
-    async onText(@Ctx() ctx: Context) {
-        console.log('@OnText: ---', ctx.text)
-        const message = ctx.message
-        // Обробляй текст або відповідай відповідно до введеної інформації
-        await ctx.reply(`Ви ввели: ${message}`);
+    switch (message.toLowerCase()) {
+      case 'water':
+        choice = waterChoices;
+        break;
+      case 'juice':
+        choice = juiceChoices;
+        break;
+      case 'coffee':
+        choice = coffeeChoices;
+        break;
+      case '<- back':
+        choice = ['water', 'juice', 'coffee', '<- back'];
     }
-
-    @Hears('hi')
-    async hears(@Ctx() ctx: Context) {
-        await ctx.reply('Hey there');
-    }
+    await ctx.reply(`Your choice: ${message}`, {
+      reply_markup: {
+        keyboard: [choice, ['<- Back']],
+        resize_keyboard: true,
+        one_time_keyboard: true,
+      },
+    });
+  }
 }
