@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { TelegrafModule } from 'nestjs-telegraf';
 import 'dotenv/config';
 import { AppUpdate } from './app.update';
+import { DbModule } from './db/db.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { AppUpdate } from './app.update';
         webhook: { domain: process.env.DOMAIN, path: '/telegram/webhook' },
       },
     }),
+    DbModule,
     // BotModule,
   ],
   controllers: [AppController],
