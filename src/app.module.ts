@@ -2,9 +2,9 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TelegrafModule } from 'nestjs-telegraf';
-import { BotModule } from './bot/bot.module';
 import 'dotenv/config';
 import { AppUpdate } from './app.update';
+import { DbModule } from './db/db.module';
 
 @Module({
   imports: [
@@ -14,7 +14,8 @@ import { AppUpdate } from './app.update';
         webhook: { domain: process.env.DOMAIN, path: '/telegram/webhook' },
       },
     }),
-    BotModule,
+    DbModule,
+    // BotModule,
   ],
   controllers: [AppController],
   providers: [AppService, AppUpdate],

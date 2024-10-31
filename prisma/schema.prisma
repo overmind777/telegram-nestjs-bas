@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                Int      @id @default(autoincrement())
+  idTelegram        Int      @unique
+  name              String
+  phone             String
+  waitingForAddress Boolean?
+  address           String
+  waitingForNotes   Boolean?
+  notes             String?
+  orders            Order[]
+}
+
+model Order {
+  id     Int  @id @default(autoincrement())
+  items  Json // Зберігає масив товарів як JSON
+  userId Int
+  user   User @relation(fields: [userId], references: [idTelegram])
+}

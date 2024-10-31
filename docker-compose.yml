@@ -1,0 +1,9 @@
+services:
+  db:
+    image: postgres
+    environment: 
+      POSTGRES_USER: overmind
+      POSTGRES_PASSWORD: mykom777
+      POSTGRES_DB: telegram
+    ports: 
+      - 5432:5432
