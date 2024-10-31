@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DbService } from './db/db.service';
+import { OrderItem } from './types';
 
 @Injectable()
 export class AppService extends DbService {
@@ -8,49 +9,34 @@ export class AppService extends DbService {
   }
 
   async getUserById(id: number) {
-    return await this.dbService.user.findUnique({
+    return this.dbService.user.findUnique({
       where: {
         idTelegram: id,
       },
     });
   }
 
-  async createNewUser(dataUser: {
-    idTelegram: number;
-    name: string;
-    phone: string;
-    address: string;
-    notes: string;
-  }) {
-    console.log(dataUser);
-    return await this.dbService.user.create({
-      data: {
-        idTelegram: dataUser.idTelegram,
-        name: dataUser.name,
-        phone: dataUser.phone,
-        address: dataUser.address,
-        notes: dataUser.notes,
-      },
+  async createNewUser(dataUser) {
+    return this.dbService.user.create({
+      data: dataUser,
     });
   }
 
-  // async createNewOrder(
-  //   userId: number,
-  //   dataOrder: [
-  //     {
-  //       product: string;
-  //       volume: string;
-  //       quantity: number;
-  //     },
-  //   ],
-  // ) {
-  //   return await this.dbService.order.create({
-  //     owner: userId,
-  //     data: {
-  //       goods: dataOrder[0].product,
-  //       volume: dataOrder[0].volume,
-  //       quantity: dataOrder[0].quantity,
-  //     },
-  //   });
-  // }
+  async createNewOrder(orderItems: OrderItem[], userId: number) {
+    const user = await this.dbService.user.findUnique({
+      where: { idTelegram: userId },
+      include: { orders: true },
+    });
+
+    if (!user) {
+      throw new Error(`User with ID ${userId} does not exist.`);
+    }
+
+    return await this.dbService.order.create({
+      data: {
+        items: JSON.stringify(orderItems), // Зберігаємо масив товарів
+        userId: +user.idTelegram,
+      },
+    });
+  }
 }

@@ -1,7 +1,7 @@
 import { Action, Ctx, Help, On, Start, Update } from 'nestjs-telegraf';
 import { Context, Markup } from 'telegraf';
 import { AppService } from './app.service';
-import { OrderItem, UserData } from './types';
+import { Order, OrderItem, UserData } from './types';
 
 const waterChoices: string[] = ['18.9 l', '6 l', '1.5 l', '0.5 l'];
 const juiceChoices: string[] = ['10 l', '5 l', '3 l', '1 l'];
@@ -14,15 +14,23 @@ export class AppUpdate extends AppService {
     idTelegram: null,
     phone: '',
     name: '',
+    waitingForAddress: true,
     address: '',
+    waitingForNotes: false,
     notes: '',
-    orderItems: [], // Масив для зберігання товарів у замовленні
   };
+
   private currentItem: OrderItem = {
     product: '',
     volume: '',
     quantity: 0,
   }; // Зберігання тимчасових даних для поточного товару
+
+  private orderItems: Order = {
+    currentItem: [],
+  };
+
+  private msgId: number;
 
   @Start()
   async start(@Ctx() ctx: Context) {
@@ -34,7 +42,6 @@ export class AppUpdate extends AppService {
         name: user.name,
         address: user.address,
         notes: user.notes,
-        orderItems: [],
       };
       await ctx.reply(
         `Вітаємо в службі доставки ТМ "Вода Подільська".\nОберіть товар`,
@@ -85,22 +92,45 @@ export class AppUpdate extends AppService {
         break;
 
       case 'переглянути замовлення':
-        const orderSummary = this.userData.orderItems
-          .map(
-            (item, index) =>
-              `${index + 1}. ${item.product} - ${item.volume}, Кількість: ${item.quantity}`,
-          )
-          .join('\n');
+        const orderDetails = this.orderItems.currentItem
+          .map((item: OrderItem) => {
+            return `Товар: ${item.product}, Обʼєм: ${item.volume}, Кількість: ${item.quantity}`;
+          })
+          .join('\n'); // Об'єднуємо рядки в один
+
+        console.log(this.userData);
         await ctx.reply(
-          `Ваше замовлення:\n${orderSummary}\n\nПідтвердити замовлення?`,
+          `Ваше замовлення:\n${orderDetails}\n\nПідтвердити замовлення?`,
           Markup.inlineKeyboard([
             Markup.button.callback('Підтвердити', 'confirm_order'),
             Markup.button.callback('Додати ще товар', 'add_more'),
+            Markup.button.callback('Корегувати замовлення', 'change_order'),
           ]),
         );
         break;
 
       default:
+        if (this.userData?.waitingForAddress) {
+          // Отримання адреси
+          this.userData.address = message; // Збереження адреси
+          this.userData.waitingForAddress = false;
+          this.userData.waitingForNotes = true; // Перехід до запиту приміток
+          await ctx.reply('Вкажіть додаткові примітки чи інструкції, якщо є.');
+        } else if (this.userData?.waitingForNotes) {
+          // Отримання приміток
+          this.userData.notes = message;
+          this.userData.waitingForNotes = false;
+          await this.createNewUser(this.userData);
+          await ctx.reply(
+            'Дякуємо! Оберіть Ваше перше замовлення',
+            Markup.keyboard([
+              ['Вода', 'Сік', 'Кава'],
+              ['Переглянути замовлення', 'Назад'],
+            ])
+              .resize()
+              .oneTime(),
+          );
+        }
         // Якщо обрано обʼєм
         if (this.currentItem.product && !this.currentItem.volume) {
           this.currentItem.volume = message;
@@ -114,8 +144,7 @@ export class AppUpdate extends AppService {
         // Якщо обрано кількість
         else if (this.currentItem.volume && !this.currentItem.quantity) {
           this.currentItem.quantity = +message;
-          console.log(this.userData);
-          this.userData.orderItems.push({ ...this.currentItem }); // Додаємо товар до замовлення
+          this.orderItems.currentItem.push({ ...this.currentItem }); // Додаємо товар до замовлення
           this.currentItem = {
             product: '',
             volume: '',
@@ -136,17 +165,22 @@ export class AppUpdate extends AppService {
 
   @Action('confirm_order')
   async confirmOrder(@Ctx() ctx: Context) {
+    console.log(this.orderItems.currentItem, this.userData.idTelegram);
+    await ctx.update['callback_query'];
     await ctx.reply(
       'Дякуємо! Ваше замовлення прийнято і буде оброблено найближчим часом.',
     );
-    //TODO create a new order in db
-    // await this.createNewOrder(
-    //   this.userData.idTelegram,
-    //   this.userData.orderItems,
-    // );
-    console.log('Final Order:', this.userData); // Логіка збереження до бази чи обробка
-    // Очистимо дані після підтвердження замовлення
-    this.userData.orderItems = [];
+
+    await this.createNewOrder(
+      this.orderItems.currentItem,
+      this.userData.idTelegram,
+    );
+
+    // await ctx.deleteMessage(this.msgId);
+
+    // Очищення замовлення після збереження
+    this.orderItems.currentItem = [];
+    this.msgId = null;
   }
 
   @Action('add_more')
@@ -162,14 +196,32 @@ export class AppUpdate extends AppService {
     );
   }
 
+  @Action('change_order')
+  async changeOrder(@Ctx() ctx: Context) {
+    await ctx.reply(
+      'Зробіть зміни',
+      Markup.keyboard([
+        ['Товар', 'Обʼєм', 'Кількість'],
+        ['Переглянути замовлення', 'Назад'],
+      ])
+        .resize()
+        .oneTime(),
+    );
+  }
+
   @On('contact')
   async onContact(@Ctx() ctx: Context) {
     const userId = ctx.from.id;
     const contact = ctx.message['contact'];
 
-    this.userData.idTelegram = userId;
-    this.userData.phone = contact.phone_number;
-    this.userData.name = `${contact.first_name}`;
+    this.userData = {
+      idTelegram: userId,
+      phone: contact.phone_number,
+      name: `${contact.first_name}`,
+      waitingForAddress: true,
+      address: '',
+      notes: '',
+    };
 
     await ctx.reply('Дякуємо! Тепер, будь ласка, вкажіть адресу доставки.');
   }

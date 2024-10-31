@@ -8,25 +8,20 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(uuid())
-  idTelegram Int      @unique
-  name       String
-  phone      String
-  address    String
-  notes      String
-  createAt   DateTime @default(now())
-  lastOrder  DateTime @updatedAt
-
-  @@map("users")
+  id                Int      @id @default(autoincrement())
+  idTelegram        Int      @unique
+  name              String
+  phone             String
+  waitingForAddress Boolean?
+  address           String
+  waitingForNotes   Boolean?
+  notes             String?
+  orders            Order[]
 }
 
 model Order {
-  id       String   @id @default(uuid())
-  goods    String
-  volume   String
-  quantity Int
-  owner    String
-  creatAt  DateTime @default(now())
-
-  @@map("orders")
+  id     Int  @id @default(autoincrement())
+  items  Json // Зберігає масив товарів як JSON
+  userId Int
+  user   User @relation(fields: [userId], references: [idTelegram])
 }

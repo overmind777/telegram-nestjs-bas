@@ -9,13 +9,18 @@ export interface UserData {
   idTelegram: number;
   phone: string;
   name: string;
+  waitingForAddress?: boolean;
   address: string;
+  waitingForNotes?: boolean;
   notes: string;
-  orderItems: OrderItem[];
 }
 
 export interface OrderItem {
   product: string;
   volume: string;
   quantity: number;
+}
+
+export interface Order {
+  currentItem: OrderItem[];
 }
