@@ -1,16 +1,11 @@
-GET http://localhost:3000/
+GET https://0b88-93-171-214-216.ngrok-free.app/telegram
 
 ###
 
-GET https://4da3-2a02-2378-131f-6504-b891-f56b-e60f-9e.ngrok-free.app/telegram/webhook
+GET https://0b88-93-171-214-216.ngrok-free.app/telegram/users
 
 ###
 
-POST https://4da3-2a02-2378-131f-6504-b891-f56b-e60f-9e.ngrok-free.app/telegram/webhook
-Content-Type: application/json
-
-{
-  "name": "Alex"
-}
+GET https://0b88-93-171-214-216.ngrok-free.app/telegram/goods
 
 ###
