@@ -8,6 +8,10 @@ export class AppService extends DbService {
     super();
   }
 
+  async getAllUsers() {
+    return this.dbService.user.findMany();
+  }
+
   async getUserById(id: number) {
     return this.dbService.user.findUnique({
       where: {
@@ -32,11 +36,15 @@ export class AppService extends DbService {
       throw new Error(`User with ID ${userId} does not exist.`);
     }
 
-    return await this.dbService.order.create({
+    return this.dbService.order.create({
       data: {
-        items: JSON.stringify(orderItems), // Зберігаємо масив товарів
+        items: JSON.parse(JSON.stringify(orderItems)), // Зберігаємо масив товарів
         userId: +user.idTelegram,
       },
     });
+  }
+
+  async getAllGoods() {
+    return await this.dbService.order.findMany();
   }
 }
