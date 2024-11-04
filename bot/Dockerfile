@@ -12,7 +12,11 @@ RUN npm install -g prisma
 WORKDIR /usr/src/app
 
 # Копіюємо package.json та package-lock.json
-COPY package*.json ./
+COPY bot/package*.json ./
+COPY bot/tsconfig.json ./
+
+# Копіюємо папку prisma разом з schema.prisma
+COPY bot/prisma ./prisma
 
 # Встановлюємо залежності
 RUN npm install
@@ -21,7 +25,7 @@ RUN npm install
 COPY . .
 
 # Генеруємо Prisma клієнт
-RUN npx prisma generate
+RUN npx prisma generate --schema=./bot/prisma/schema.prisma
 
 # Компілюємо TypeScript у JavaScript
 RUN npm run build
@@ -39,6 +43,9 @@ COPY --from=builder /usr/src/app/prisma ./prisma
 
 # Копіюємо Prisma схему (для можливості міграцій у продакшн)
 COPY --from=builder /usr/src/app/package*.json ./
+
+# Встановлюємо NODE_ENV
+ENV NODE_ENV=production
 
 # Експонуємо порт
 EXPOSE 5000

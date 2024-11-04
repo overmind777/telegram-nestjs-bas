@@ -5,6 +5,6 @@ FROM nginx:alpine
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # Копіюємо згенеровані файли фронтенду до веб-директориї Nginx
-COPY --from=webappfulltelegramdocker-frontend /app/dist /usr/share/nginx/html
+# COPY --from=webappfulltelegramdocker-frontend /app/dist /usr/share/nginx/html
 
 EXPOSE 80 
