@@ -48,7 +48,7 @@ COPY --from=builder /usr/src/app/package*.json ./
 ENV NODE_ENV=production
 
 # Експонуємо порт
-EXPOSE 5000
+EXPOSE 3000
 
 # Запускаємо застосунок
 CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]
