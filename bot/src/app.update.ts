@@ -2,13 +2,8 @@ import { Action, Ctx, Help, On, Start, Update } from 'nestjs-telegraf';
 import { Context, Markup } from 'telegraf';
 import { AppService } from './app.service';
 import { Order, OrderItem, UserData } from './types';
+import { goods, productsType, quantityChoices } from './helpers/goods';
 
-const quantityChoices: string[] = ['0', '1', '2', '3', '5'];
-const productChoices: { [key: string]: string[] } = {
-  вода: ['18.9 l', '6 l', '1.5 l', '0.5 l'],
-  сік: ['10 l', '5 l', '3 l', '1 l'],
-  кава: ['1 kg', '0.250 kg'],
-};
 
 @Update()
 export class AppUpdate extends AppService {
@@ -77,11 +72,12 @@ export class AppUpdate extends AppService {
   }
 
   // Новий метод для вибору об'єму
-  async selectVolume(ctx: Context, product: string) {
-    const choices = productChoices[product];
+  async selectProductType(ctx: Context, product: string) {
+    console.log(product);
+    const choices = goods[product];
     if (choices) {
       await ctx.reply(
-        `Оберіть об'єм для ${product}`,
+        `Оберіть ${product}`,
         Markup.keyboard([choices, ['Назад']])
           .resize()
           .oneTime(),
@@ -90,6 +86,8 @@ export class AppUpdate extends AppService {
       await ctx.reply('Вибраний товар не підтримує вибір об’єму.');
     }
   }
+
+  async 
 
   // Новий метод для вибору кількості
   async selectQuantity(ctx: Context) {
@@ -143,14 +141,14 @@ export class AppUpdate extends AppService {
       : ctx.message['text'].toLowerCase();
 
     const goodsKeyboard =
-      productChoices[message.trim().substring(0, message.indexOf(' '))];
+      goods[message.trim().substring(0, message.indexOf(' '))];
 
     switch (message) {
       case 'вода':
       case 'сік':
       case 'кава':
         this.currentItem = { product: message, volume: '', quantity: 0 };
-        await this.selectVolume(ctx, message); // Виклик нового методу для об'єму
+        await this.selectProductType(ctx, message); // Виклик нового методу для об'єму
         break;
 
       case 'товар':
@@ -169,7 +167,7 @@ export class AppUpdate extends AppService {
 
       case 'обʼєм':
         if (this.currentItem.product) {
-          await this.selectVolume(ctx, this.currentItem.product); // Виклик нового методу для об'єму
+          await this.selectProductType(ctx, this.currentItem.product); // Виклик нового методу для об'єму
         } else {
           await ctx.reply(
             'Будь ласка, спочатку оберіть товар.',
