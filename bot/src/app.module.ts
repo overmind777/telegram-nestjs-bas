@@ -3,8 +3,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TelegrafModule } from 'nestjs-telegraf';
 import 'dotenv/config';
-import { AppUpdate } from './app.update';
 import { DbModule } from './db/db.module';
+import { AppUpdateV2 } from './app.updateV2';
 
 @Module({
   imports: [
@@ -18,6 +18,8 @@ import { DbModule } from './db/db.module';
     // BotModule,
   ],
   controllers: [AppController],
-  providers: [AppService, AppUpdate],
+  providers: [AppService,
+    // AppUpdate,
+    AppUpdateV2],
 })
-export class AppModule {}
+export class AppModule { }

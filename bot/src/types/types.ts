@@ -17,6 +17,7 @@ export interface UserData {
 
 export interface OrderItem {
   product: string;
+  type: string;
   volume: string;
   quantity: number;
 }
