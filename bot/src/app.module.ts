@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TelegrafModule } from 'nestjs-telegraf';
-import 'dotenv/config';
+import * as dotenv from 'dotenv';
+dotenv.config({ path: '../.env' });
 import { DbModule } from './db/db.module';
 import { AppUpdateV2 } from './app.updateV2';
+
 
 @Module({
   imports: [
@@ -15,7 +17,6 @@ import { AppUpdateV2 } from './app.updateV2';
       },
     }),
     DbModule,
-    // BotModule,
   ],
   controllers: [AppController],
   providers: [AppService,

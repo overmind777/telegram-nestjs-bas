@@ -27,6 +27,7 @@ export class AppUpdateV2 extends AppService {
   private currentItem: OrderItem = {
     product: '',
     type: '',
+    tara: '',
     volume: '',
     quantity: 0,
   }; // Зберігання тимчасових даних для поточного товару
@@ -170,30 +171,52 @@ export class AppUpdateV2 extends AppService {
 
   // Обробник для вибору об’єму
   @Action([
-    '18.9 l',
-    '10 l',
-    '6 l',
-    '5 l',
-    '3 l',
-    '1.5 l',
-    '1 l',
-    '0.5 l',
-    '1 kg',
-    '0.250 kg',
+    '18.9 л',
+    '10 л',
+    '6 л',
+    '5 л',
+    '3 л',
+    '1.5 л',
+    '1 л',
+    '0.5 л',
+    '1 kг',
+    '0.250 kг',
   ])
   @DeleteMessageAfter()
   async selectVolume(@Ctx() ctx: Context) {
     const action = ctx.callbackQuery['data'];
     this.currentItem.volume = action;
-
-    await ctx.reply(
-      'Вкажіть кількість',
-      Markup.inlineKeyboard([
-        ...choicesQuantity.map((quantity) => [
-          Markup.button.callback(quantity, quantity),
+    if (action === '18.9 л'){
+      await ctx.reply('Тара на обмін?',
+          Markup.inlineKeyboard([
+              Markup.button.callback('Так', 'так'),
+              Markup.button.callback('Ні', 'ні')
+          ]))
+    } else {
+      await ctx.reply(
+        'Вкажіть кількість',
+        Markup.inlineKeyboard([
+          ...choicesQuantity.map((quantity) => [
+            Markup.button.callback(quantity, quantity),
+          ]),
+          [Markup.button.callback('Відміна', 'cancel')],
         ]),
-        [Markup.button.callback('Відміна', 'cancel')],
-      ]),
+      );
+    }
+  }
+
+  @Action(['так', 'ні'])
+  @DeleteMessageAfter()
+  async selectVolumeBigPuck(@Ctx() ctx: Context){
+    this.currentItem.tara = ctx.callbackQuery['data'];
+    await ctx.reply(
+        'Вкажіть кількість',
+        Markup.inlineKeyboard([
+          ...choicesQuantity.map((quantity) => [
+            Markup.button.callback(quantity, quantity),
+          ]),
+          [Markup.button.callback('Відміна', 'cancel')],
+        ]),
     );
   }
 
@@ -202,7 +225,7 @@ export class AppUpdateV2 extends AppService {
   async selectQuantity(@Ctx() ctx: Context) {
     const action = ctx.callbackQuery['data'];
     this.currentItem.quantity = action;
-    this.logger.log(`186 -- ${this.orderItems.currentItem}`);
+    this.logger.log(`@Action(['1', '2', '3', '4', '5']) --- ${this.orderItems.currentItem}`);
     this.addItemToOrder(action);
     const orderDetails = this.orderItems.currentItem
       .map((item: OrderItem) => {
@@ -235,7 +258,7 @@ export class AppUpdateV2 extends AppService {
     await ctx.reply(
       'Дякуємо! Ваше замовлення прийнято і буде оброблено найближчим часом.',
     );
-    this.logger.log(`215 -- ${this.orderItems.currentItem}`);
+
     await this.createNewOrder(
       this.orderItems.currentItem,
       this.userData.idTelegram,
@@ -316,6 +339,18 @@ export class AppUpdateV2 extends AppService {
       this.userData.notes = ctx.text;
       this.userData.waitingForNotes = false;
       await this.createNewUser(this.userData);
+      await ctx.reply(
+          `Вітаємо в службі доставки ТМ "Вода Подільська".\nОберіть товар`,
+          Markup.inlineKeyboard([
+            [
+              Markup.button.callback('Вода', 'water'),
+              Markup.button.callback('Сік', 'juice'),
+              Markup.button.callback('Кава', 'coffee'),
+            ],
+
+            [Markup.button.callback('Відміна', 'cancel')],
+          ]),
+      );
     }
   }
 

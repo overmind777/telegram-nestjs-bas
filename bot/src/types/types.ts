@@ -18,6 +18,7 @@ export interface UserData {
 export interface OrderItem {
   product: string;
   type: string;
+  tara?: string;
   volume: string;
   quantity: number;
 }
