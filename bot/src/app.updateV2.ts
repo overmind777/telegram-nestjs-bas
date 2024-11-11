@@ -1,3 +1,5 @@
+import { Keys } from './../node_modules/.prisma/client/index.d';
+
 import { Action, Ctx, Help, On, Start, Update } from 'nestjs-telegraf';
 import { Context, Markup } from 'telegraf';
 import { AppService } from './app.service';
@@ -186,12 +188,12 @@ export class AppUpdateV2 extends AppService {
   async selectVolume(@Ctx() ctx: Context) {
     const action = ctx.callbackQuery['data'];
     this.currentItem.volume = action;
-    if (action === '18.9 л'){
+    if (action === '18.9 л') {
       await ctx.reply('Тара на обмін?',
-          Markup.inlineKeyboard([
-              Markup.button.callback('Так', 'так'),
-              Markup.button.callback('Ні', 'ні')
-          ]))
+        Markup.inlineKeyboard([
+          Markup.button.callback('Так', 'так'),
+          Markup.button.callback('Ні', 'ні')
+        ]))
     } else {
       await ctx.reply(
         'Вкажіть кількість',
@@ -207,16 +209,16 @@ export class AppUpdateV2 extends AppService {
 
   @Action(['так', 'ні'])
   @DeleteMessageAfter()
-  async selectVolumeBigPuck(@Ctx() ctx: Context){
+  async selectVolumeBigPuck(@Ctx() ctx: Context) {
     this.currentItem.tara = ctx.callbackQuery['data'];
     await ctx.reply(
-        'Вкажіть кількість',
-        Markup.inlineKeyboard([
-          ...choicesQuantity.map((quantity) => [
-            Markup.button.callback(quantity, quantity),
-          ]),
-          [Markup.button.callback('Відміна', 'cancel')],
+      'Вкажіть кількість',
+      Markup.inlineKeyboard([
+        ...choicesQuantity.map((quantity) => [
+          Markup.button.callback(quantity, quantity),
         ]),
+        [Markup.button.callback('Відміна', 'cancel')],
+      ]),
     );
   }
 
@@ -291,13 +293,18 @@ export class AppUpdateV2 extends AppService {
     if (this.orderItems.currentItem.length >= 2) {
       await ctx.reply(
         'Зробіть зміни',
-        //TODO!  add inline keyboard
+        Markup.inlineKeyboard([
+
+        ])
       );
       this.isChangingOrder = true;
     } else {
+      const singleItem = this.orderItems.currentItem[0];
       await ctx.reply(
         'Зробіть зміни',
-        //TODO!  add inline keyboard
+        Markup.inlineKeyboard([
+          Markup.button.callback(),
+        ])
       );
       this.isChangingOrder = true;
     }
@@ -340,16 +347,16 @@ export class AppUpdateV2 extends AppService {
       this.userData.waitingForNotes = false;
       await this.createNewUser(this.userData);
       await ctx.reply(
-          `Вітаємо в службі доставки ТМ "Вода Подільська".\nОберіть товар`,
-          Markup.inlineKeyboard([
-            [
-              Markup.button.callback('Вода', 'water'),
-              Markup.button.callback('Сік', 'juice'),
-              Markup.button.callback('Кава', 'coffee'),
-            ],
+        `Вітаємо в службі доставки ТМ "Вода Подільська".\nОберіть товар`,
+        Markup.inlineKeyboard([
+          [
+            Markup.button.callback('Вода', 'water'),
+            Markup.button.callback('Сік', 'juice'),
+            Markup.button.callback('Кава', 'coffee'),
+          ],
 
-            [Markup.button.callback('Відміна', 'cancel')],
-          ]),
+          [Markup.button.callback('Відміна', 'cancel')],
+        ]),
       );
     }
   }
