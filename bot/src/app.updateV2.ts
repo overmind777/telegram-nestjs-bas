@@ -1,5 +1,3 @@
-import { Keys } from './../node_modules/.prisma/client/index.d';
-
 import { Action, Ctx, Help, On, Start, Update } from 'nestjs-telegraf';
 import { Context, Markup } from 'telegraf';
 import { AppService } from './app.service';
@@ -189,11 +187,13 @@ export class AppUpdateV2 extends AppService {
     const action = ctx.callbackQuery['data'];
     this.currentItem.volume = action;
     if (action === '18.9 л') {
-      await ctx.reply('Тара на обмін?',
+      await ctx.reply(
+        'Тара на обмін?',
         Markup.inlineKeyboard([
           Markup.button.callback('Так', 'так'),
-          Markup.button.callback('Ні', 'ні')
-        ]))
+          Markup.button.callback('Ні', 'ні'),
+        ]),
+      );
     } else {
       await ctx.reply(
         'Вкажіть кількість',
@@ -227,7 +227,9 @@ export class AppUpdateV2 extends AppService {
   async selectQuantity(@Ctx() ctx: Context) {
     const action = ctx.callbackQuery['data'];
     this.currentItem.quantity = action;
-    this.logger.log(`@Action(['1', '2', '3', '4', '5']) --- ${this.orderItems.currentItem}`);
+    this.logger.log(
+      `@Action(['1', '2', '3', '4', '5']) --- ${this.orderItems.currentItem}`,
+    );
     this.addItemToOrder(action);
     const orderDetails = this.orderItems.currentItem
       .map((item: OrderItem) => {
@@ -291,30 +293,25 @@ export class AppUpdateV2 extends AppService {
   @DeleteMessageAfter()
   async changeOrder(@Ctx() ctx: Context) {
     if (this.orderItems.currentItem.length >= 2) {
-      await ctx.reply(
-        'Зробіть зміни',
-        Markup.inlineKeyboard([
-
-        ])
-      );
+      await ctx.reply('Зробіть зміни', Markup.inlineKeyboard([]));
       this.isChangingOrder = true;
     } else {
       const singleItem = this.orderItems.currentItem[0];
       await ctx.reply(
         'Зробіть зміни',
         Markup.inlineKeyboard([
-          Markup.button.callback(),
-        ])
+          Markup.button.callback(singleItem.product, singleItem.product),
+        ]),
       );
       this.isChangingOrder = true;
     }
   }
 
-  @Action('back')
-  @DeleteMessageAfter()
-  async selectBack(@Ctx() ctx: Context) {
-    //TODO create logic for back button
-  }
+  // @Action('back')
+  // @DeleteMessageAfter()
+  // async selectBack(@Ctx() ctx: Context) {
+  //   //TODO create logic for back button
+  // }
 
   @On('contact')
   async onContact(@Ctx() ctx: Context) {

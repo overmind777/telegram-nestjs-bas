@@ -3,10 +3,13 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TelegrafModule } from 'nestjs-telegraf';
 import * as dotenv from 'dotenv';
-dotenv.config({ path: '../.env' });
 import { DbModule } from './db/db.module';
-import { AppUpdateV2 } from './app.updateV2';
+import { session } from 'telegraf';
+import { AppUpdate } from './app.update';
+import { SelectUserWizard } from './wizards/select_user_wizard';
+import { SelectProductsWizard } from './wizards/select_products_wizard';
 
+dotenv.config({ path: '../.env' });
 
 @Module({
   imports: [
@@ -15,12 +18,17 @@ import { AppUpdateV2 } from './app.updateV2';
       launchOptions: {
         webhook: { domain: process.env.DOMAIN, path: '/telegram/webhook' },
       },
+      middlewares: [session()],
     }),
     DbModule,
   ],
   controllers: [AppController],
-  providers: [AppService,
-    // AppUpdate,
-    AppUpdateV2],
+  providers: [
+    AppService,
+    SelectUserWizard,
+    SelectProductsWizard,
+    AppUpdate,
+    // AppUpdateV2,
+  ],
 })
-export class AppModule { }
+export class AppModule {}
