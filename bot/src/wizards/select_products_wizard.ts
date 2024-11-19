@@ -54,6 +54,9 @@ export class SelectProductsWizard extends AppService {
   private async confirm(@Ctx() ctx) {
     const userId = ctx.update.callback_query.from.id;
     await this.createNewOrder(this.goodsChoise, userId);
+    console.log(this.goodsChoise)
+    this.goodsChoise = []
+    console.log(this.goodsChoise)
   }
 
   private addNew(@Ctx() ctx) {
