@@ -4,8 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // url      = env("DATABASE_URL")
-  url      = "postgresql://overmind:mykom777@localhost:5432/telegram?schema=public"
+  url      = env("DATABASE_URL")
 }
 
 model User {
