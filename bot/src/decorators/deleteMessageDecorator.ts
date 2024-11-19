@@ -17,8 +17,12 @@ export function DeleteMessageAfter() {
         await originalMethod.apply(this, args);
       } finally {
         // Видалення повідомлення після виконання основної дії
-        if (ctx && ctx.msg && 'message_id' in ctx.msg) {
-          await ctx.deleteMessage(ctx.msg.message_id);
+        try {
+          if (ctx && ctx.msg && 'message_id' in ctx.msg) {
+            await ctx.deleteMessage(ctx.msg.message_id);
+          }
+        } catch (e) {
+          console.log(e);
         }
       }
     };

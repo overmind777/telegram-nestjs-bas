@@ -6,12 +6,14 @@ import { DeleteMessageAfter } from '../decorators/deleteMessageDecorator';
 @Wizard('SELECT_USER_WIZARD')
 export class SelectUserWizard extends AppService {
   @WizardStep(1)
-  // @DeleteMessageAfter()
   async onContact(@Ctx() ctx) {
     ctx.wizard.state = {
+      idTelegram: null,
       phone: '',
       name: '',
+      waitingForAddress: true,
       address: '',
+      waitingForNotes: false,
       notes: '',
     };
     await ctx.reply(
@@ -29,8 +31,10 @@ export class SelectUserWizard extends AppService {
   @WizardStep(2)
   @DeleteMessageAfter()
   async onAddress(@Ctx() ctx) {
+    const idTelegram = ctx.update.message.from.id;
     const phone_number = ctx.update.message.contact.phone_number;
     const name = ctx.update.message.contact.first_name;
+    ctx.wizard.state.idTelegram = idTelegram;
     ctx.wizard.state.phone = phone_number;
     ctx.wizard.state.name = name;
     await ctx.reply('Дякуємо! Тепер, будь ласка, вкажіть адресу доставки.');
@@ -41,10 +45,16 @@ export class SelectUserWizard extends AppService {
   @DeleteMessageAfter()
   async onNotes(@Ctx() ctx) {
     const address = ctx.update.message.text;
-    ctx.wizard.state.address = address;
-    await ctx.reply('Вкажіть додаткові примітки чи інструкції, якщо є.');
-    console.log('46', ctx.wizard.state);
-    ctx.wizard.next();
+    if (!address || ctx.wizard.state.waitingForAddress) {
+      await ctx.reply('Вкажіть реальну адресу: ');
+    } else {
+      ctx.wizard.state.address = address;
+      ctx.wizard.state.waitingForAddress = false;
+      ctx.wizard.state.waitingForNotes = true;
+      await ctx.reply('Вкажіть додаткові примітки чи інструкції, якщо є.');
+      console.log('54', ctx.wizard.state);
+      ctx.wizard.next();
+    }
   }
 
   @WizardStep(4)
@@ -52,7 +62,10 @@ export class SelectUserWizard extends AppService {
   async onFinish(@Ctx() ctx) {
     const notes = ctx.update.message.text;
     ctx.wizard.state.notes = notes;
-    console.log(ctx.wizard.state);
-    ctx.scene.leave();
+    ctx.wizard.state.waitingForNotes = false;
+    // console.log(ctx.wizard.state);
+    await this.createNewUser(ctx.wizard.state);
+    // ctx.scene.leave();
+    ctx.scene.enter('SELECT_PRODUCTS_WIZARD');
   }
 }
