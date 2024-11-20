@@ -2,9 +2,26 @@ import { Ctx, Wizard, WizardStep } from 'nestjs-telegraf';
 import { AppService } from '../app.service';
 import { Markup } from 'telegraf';
 import { DeleteMessageAfter } from '../decorators/deleteMessageDecorator';
+import * as levenshtein from 'fast-levenshtein';
 
 @Wizard('SELECT_USER_WIZARD')
 export class SelectUserWizard extends AppService {
+
+  private streetList: string[] = [
+    'Шевченка', 'Грушевського', 'Лесі Українки', 'Тараса Шевченка', 'Молодіжна', 'Центральна', 'Київська', 'Соборна', 'Залізнична'
+    // додайте ваші вулиці
+  ];
+
+  // Функція для пошуку схожих вулиць за допомогою Левенштейна
+  private getSimilarStreets(input: string): string[] {
+    // Порівнюємо кожну вулицю з введеним текстом і фільтруємо на основі Левенштейна
+    const threshold = 3; // Поріг схожості (менша відстань - більша схожість)
+    return this.streetList.filter(street => {
+      const distance = levenshtein.get(input.toLowerCase(), street.toLowerCase());
+      return distance <= threshold; // Повертаємо вулиці, де відстань Левенштейна менше або рівна порогу
+    });
+  }
+
   @WizardStep(1)
   async onContact(@Ctx() ctx) {
     ctx.wizard.state = {
@@ -21,10 +38,9 @@ export class SelectUserWizard extends AppService {
       Markup.keyboard([
         Markup.button.contactRequest('Надіслати номер телефону'),
       ])
-        .resize()
-        .oneTime(),
+        .oneTime()
+        .resize(),
     );
-    console.log('25', ctx.wizard.state);
     ctx.wizard.next();
   }
 
@@ -45,15 +61,26 @@ export class SelectUserWizard extends AppService {
   @DeleteMessageAfter()
   async onNotes(@Ctx() ctx) {
     const address = ctx.update.message.text;
+    console.log(address)
+
     if (!address || ctx.wizard.state.waitingForAddress) {
-      await ctx.reply('Вкажіть реальну адресу: ');
+      await ctx.reply('Вкажіть реальну адресу доставки (вулиця, номер будинку, місто):');
     } else {
-      ctx.wizard.state.address = address;
-      ctx.wizard.state.waitingForAddress = false;
-      ctx.wizard.state.waitingForNotes = true;
-      await ctx.reply('Вкажіть додаткові примітки чи інструкції, якщо є.');
-      console.log('54', ctx.wizard.state);
-      ctx.wizard.next();
+      // Шукаємо схожі вулиці за допомогою Левенштейна
+      const similarStreets = this.getSimilarStreets(address);
+
+      if (similarStreets.length > 0) {
+        // Створюємо інлайн-кнопки для вибору вулиці
+        const buttons = similarStreets.map(street =>
+            Markup.button.callback(street, `street_${street}`)
+        );
+        await ctx.reply(
+            'Виберіть правильну вулицю з списку:',
+            Markup.inlineKeyboard(buttons, { columns: 2 })
+        );
+      } else {
+        await ctx.reply('Не знайдено схожих вулиць, будь ласка, введіть точну адресу.');
+      }
     }
   }
 
