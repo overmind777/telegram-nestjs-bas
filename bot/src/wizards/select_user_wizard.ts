@@ -4,26 +4,33 @@ import { Markup } from 'telegraf';
 import { DeleteMessageAfter } from '../decorators/deleteMessageDecorator';
 import * as levenshtein from 'fast-levenshtein';
 
+import * as fs from 'fs';
+import * as path from 'path';
+
 @Wizard('SELECT_USER_WIZARD')
 export class SelectUserWizard extends AppService {
-
-  private streetList: string[] = [
-    'Шевченка', 'Грушевського', 'Лесі Українки', 'Тараса Шевченка', 'Молодіжна', 'Центральна', 'Київська', 'Соборна', 'Залізнична'
-    // додайте ваші вулиці
-  ];
+  private streetList: string[] = [];
+  private address: string = '';
 
   // Функція для пошуку схожих вулиць за допомогою Левенштейна
   private getSimilarStreets(input: string): string[] {
     // Порівнюємо кожну вулицю з введеним текстом і фільтруємо на основі Левенштейна
-    const threshold = 3; // Поріг схожості (менша відстань - більша схожість)
-    return this.streetList.filter(street => {
-      const distance = levenshtein.get(input.toLowerCase(), street.toLowerCase());
+    const threshold = 2; // Поріг схожості (менша відстань - більша схожість)
+    return this.streetList.filter((street) => {
+      const distance = levenshtein.get(
+        input.toLowerCase(),
+        street.toLowerCase(),
+      );
       return distance <= threshold; // Повертаємо вулиці, де відстань Левенштейна менше або рівна порогу
     });
   }
 
   @WizardStep(1)
   async onContact(@Ctx() ctx) {
+    const jsonFilePath = path.resolve('src/helpers/test_street.json');
+    this.streetList = JSON.parse(fs.readFileSync(jsonFilePath, 'utf-8'));
+    this.streetList = this.streetList.flatMap((item) => [item['Назва']]);
+
     ctx.wizard.state = {
       idTelegram: null,
       phone: '',
@@ -60,26 +67,44 @@ export class SelectUserWizard extends AppService {
   @WizardStep(3)
   @DeleteMessageAfter()
   async onNotes(@Ctx() ctx) {
-    const address = ctx.update.message.text;
-    console.log(address)
+    this.address = ctx.update?.message?.text;
 
-    if (!address || ctx.wizard.state.waitingForAddress) {
-      await ctx.reply('Вкажіть реальну адресу доставки (вулиця, номер будинку, місто):');
+    if (ctx.update?.callback_query?.data) {
+      this.address = ctx.update?.callback_query?.data;
+      ctx.wizard.state.waitingForAddress = false;
+      ctx.wizard.state.waitingForNotes = true;
+      ctx.wizard.state.address = this.address;
+      ctx.wizard.next();
+    }
+
+    if (this.streetList.includes(this.address)) {
+      ctx.wizard.state.waitingForAddress = false;
+      ctx.wizard.state.waitingForNotes = true;
+      ctx.wizard.state.address = this.address;
+      await ctx.reply(
+        'Додайте примітки: ',
+        Markup.inlineKeyboard([
+          Markup.button.callback('без приміток', 'not_notes'),
+        ]),
+      );
+      ctx.wizard.next();
     } else {
       // Шукаємо схожі вулиці за допомогою Левенштейна
-      const similarStreets = this.getSimilarStreets(address);
+      const similarStreets = this.getSimilarStreets(this.address);
 
       if (similarStreets.length > 0) {
         // Створюємо інлайн-кнопки для вибору вулиці
-        const buttons = similarStreets.map(street =>
-            Markup.button.callback(street, `street_${street}`)
+        const buttons = similarStreets.map((street) =>
+          Markup.button.callback(street, street),
         );
         await ctx.reply(
-            'Виберіть правильну вулицю з списку:',
-            Markup.inlineKeyboard(buttons, { columns: 2 })
+          'Виберіть правильну вулицю з списку:',
+          Markup.inlineKeyboard(buttons, { columns: 2 }),
         );
       } else {
-        await ctx.reply('Не знайдено схожих вулиць, будь ласка, введіть точну адресу.');
+        await ctx.reply(
+          'Не знайдено схожих вулиць, будь ласка, введіть точну адресу.',
+        );
       }
     }
   }
@@ -87,12 +112,15 @@ export class SelectUserWizard extends AppService {
   @WizardStep(4)
   @DeleteMessageAfter()
   async onFinish(@Ctx() ctx) {
-    const notes = ctx.update.message.text;
-    ctx.wizard.state.notes = notes;
+    const notes = ctx.update.message?.text;
+    if (ctx.update?.callback_query?.data === 'not_notes') {
+      ctx.wizard.state.notes = '';
+    } else {
+      ctx.wizard.state.notes = notes;
+    }
     ctx.wizard.state.waitingForNotes = false;
-    // console.log(ctx.wizard.state);
     await this.createNewUser(ctx.wizard.state);
-    // ctx.scene.leave();
+    ctx.scene.leave();
     ctx.scene.enter('SELECT_PRODUCTS_WIZARD');
   }
 }
