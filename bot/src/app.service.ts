@@ -13,9 +13,10 @@ export class AppService extends DbService {
   }
 
   async getUserById(id: number) {
+    const idUser = BigInt(id)
     return this.dbService.user.findUnique({
       where: {
-        idTelegram: id,
+        idTelegram: idUser,
       },
     });
   }
@@ -39,7 +40,7 @@ export class AppService extends DbService {
     return this.dbService.order.create({
       data: {
         items: JSON.parse(JSON.stringify(orderItems)), // Зберігаємо масив товарів
-        userId: +user.idTelegram,
+        userId: user.idTelegram,
       },
     });
   }

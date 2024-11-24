@@ -22,7 +22,7 @@ COPY bot/prisma ./prisma
 RUN npm install
 
 # Копіюємо весь проект (не включаючи файли, зазначені в .dockerignore)
-COPY . .
+COPY ./bot ./bot
 
 # Генеруємо Prisma клієнт
 RUN npx prisma generate --schema=./bot/prisma/schema.prisma

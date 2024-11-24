@@ -9,7 +9,7 @@ datasource db {
 
 model User {
   id                Int      @id @default(autoincrement())
-  idTelegram        Int      @unique
+  idTelegram        String
   name              String
   phone             String
   waitingForAddress Boolean?
@@ -20,8 +20,8 @@ model User {
 }
 
 model Order {
-  id     Int  @id @default(autoincrement())
+  id     Int    @id @default(autoincrement())
   items  Json // Зберігає масив товарів як JSON
-  userId Int
-  user   User @relation(fields: [userId], references: [idTelegram])
+  userId String
+  user   User   @relation(fields: [userId], references: [idTelegram])
 }

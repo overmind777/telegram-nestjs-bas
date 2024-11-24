@@ -4,11 +4,15 @@ import { Markup } from 'telegraf';
 import { DeleteMessageAfter } from '../decorators/deleteMessageDecorator';
 import * as levenshtein from 'fast-levenshtein';
 
+import { address } from '../helpers/test_street';
+
 import * as fs from 'fs';
 import * as path from 'path';
+import { Logger } from '@nestjs/common';
 
 @Wizard('SELECT_USER_WIZARD')
 export class SelectUserWizard extends AppService {
+  private readonly logger = new Logger()
   private streetList: string[] = [];
   private address: string = '';
 
@@ -27,9 +31,9 @@ export class SelectUserWizard extends AppService {
 
   @WizardStep(1)
   async onContact(@Ctx() ctx) {
-    const jsonFilePath = path.resolve('src/helpers/test_street.json');
-    this.streetList = JSON.parse(fs.readFileSync(jsonFilePath, 'utf-8'));
-    this.streetList = this.streetList.flatMap((item) => [item['Назва']]);
+    // const jsonFilePath = path.resolve(__dirname, '..', 'helpers', 'test_street.ts');
+    // this.streetList = JSON.parse(fs.readFileSync(jsonFilePath, 'utf-8'));
+    this.streetList = address.flatMap((item) => [item['Назва']]);
 
     ctx.wizard.state = {
       idTelegram: null,
@@ -54,20 +58,25 @@ export class SelectUserWizard extends AppService {
   @WizardStep(2)
   @DeleteMessageAfter()
   async onAddress(@Ctx() ctx) {
-    const idTelegram = ctx.update.message.from.id;
-    const phone_number = ctx.update.message.contact.phone_number;
-    const name = ctx.update.message.contact.first_name;
-    ctx.wizard.state.idTelegram = idTelegram;
-    ctx.wizard.state.phone = phone_number;
-    ctx.wizard.state.name = name;
-    await ctx.reply('Дякуємо! Тепер, будь ласка, вкажіть адресу доставки.');
-    ctx.wizard.next();
+    try{
+      const idTelegram = ctx.update.message.from.id;
+      const phone_number = ctx.update.message.contact.phone_number;
+      const name = ctx.update.message.contact.first_name;
+      ctx.wizard.state.idTelegram = idTelegram;
+      ctx.wizard.state.phone = phone_number;
+      ctx.wizard.state.name = name;
+      await ctx.reply('Дякуємо! Тепер, будь ласка, вкажіть адресу доставки.');
+      ctx.wizard.next();
+    } catch (e){
+      this.logger.warn(e)
+    }
   }
 
   @WizardStep(3)
   @DeleteMessageAfter()
   async onNotes(@Ctx() ctx) {
-    this.address = ctx.update?.message?.text;
+    try{
+      this.address = ctx.update?.message?.text;
 
     if (ctx.update?.callback_query?.data) {
       this.address = ctx.update?.callback_query?.data;
@@ -107,20 +116,28 @@ export class SelectUserWizard extends AppService {
         );
       }
     }
+    } catch (e){
+      this.logger.warn(e)
+    }
   }
 
   @WizardStep(4)
   @DeleteMessageAfter()
   async onFinish(@Ctx() ctx) {
-    const notes = ctx.update.message?.text;
-    if (ctx.update?.callback_query?.data === 'not_notes') {
-      ctx.wizard.state.notes = '';
-    } else {
-      ctx.wizard.state.notes = notes;
-    }
-    ctx.wizard.state.waitingForNotes = false;
-    await this.createNewUser(ctx.wizard.state);
-    ctx.scene.leave();
-    ctx.scene.enter('SELECT_PRODUCTS_WIZARD');
+      try
+    {
+      const notes = ctx.update.message?.text;
+      if (ctx.update?.callback_query?.data === 'not_notes') {
+        ctx.wizard.state.notes = '';
+      } else {
+        ctx.wizard.state.notes = notes;
+      }
+      ctx.wizard.state.waitingForNotes = false;
+      await this.createNewUser(ctx.wizard.state);
+      ctx.scene.leave();
+      ctx.scene.enter('SELECT_PRODUCTS_WIZARD');
+    } catch (e){
+        this.logger.warn(e)
+      }
   }
 }
